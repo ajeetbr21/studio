@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -36,17 +37,17 @@ export default function Home() {
     front: File | null;
     back: File | null;
   }) => {
-    console.log('KYC Submitted:', details);
+    console.log('KYC Submitted (Demo Mode):', details);
     if (user) {
-      setUser({ ...user, kycStatus: 'pending' }); // Set to pending after submission
-       toast({
-        title: 'KYC Submitted!',
-        description: 'Your documents are now pending verification.',
+      setUser({ ...user, kycStatus: 'verified' }); // Instantly set to verified for demo
+      toast({
+        title: 'KYC Verified!',
+        description: 'Your account is now fully verified.',
       });
     }
     setKycModalOpen(false);
   };
-  
+
   const handleLogout = () => {
     setUser(null);
   };
