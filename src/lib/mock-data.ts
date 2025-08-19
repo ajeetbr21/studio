@@ -20,8 +20,6 @@ export const MOCK_SERVICES: Service[] = [
       { id: 'rev-1-3', author: 'Sam Wilson', rating: 5, text: 'Top-notch quality. They transformed our idea into a beautiful and functional app.' },
     ],
     tags: [{name: 'top-rated', type: 'default'}],
-    bookingStatus: 'completed',
-    paymentStatus: 'cleared',
   },
   {
     id: 'service-2',
@@ -39,8 +37,6 @@ export const MOCK_SERVICES: Service[] = [
       { id: 'rev-2-2', author: 'Michael Brown', rating: 3, text: 'Good design, but the process took a bit longer than we anticipated.' },
     ],
     tags: [{name: 'new', type: 'secondary'}],
-    bookingStatus: 'in progress',
-    paymentStatus: 'in escrow',
   },
   {
     id: 'service-3',
@@ -58,8 +54,6 @@ export const MOCK_SERVICES: Service[] = [
       { id: 'rev-3-2', author: 'Sarah Blue', rating: 4, text: 'Solid strategy and good reporting. Seeing steady growth.' },
       { id: 'rev-3-3', author: 'Kevin Black', rating: 4, text: 'Very knowledgeable team. They know what they are doing.' },
     ],
-    bookingStatus: 'requested',
-    paymentStatus: 'pending',
   },
    {
     id: 'service-4',
@@ -77,7 +71,5 @@ export const MOCK_SERVICES: Service[] = [
       { id: 'rev-4-2', author: 'Mark Taylor', rating: 5, text: 'Professional, efficient, and very knowledgeable. They optimized our costs significantly.' },
     ],
     tags: [{name: 'booked', type: 'destructive'}],
-    bookingStatus: 'cancelled',
-    paymentStatus: 'refunded',
   },
 ];

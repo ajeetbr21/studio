@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, MessageSquare, Edit, Trash2, Tag, DollarSign, User, Phone, Check, RefreshCw } from 'lucide-react';
+import { Star, MessageSquare, Edit, Trash2, Tag, DollarSign, User, Phone, RefreshCw } from 'lucide-react';
 import type { Service, Role, User as UserType } from '@/lib/types';
 import {
   Dialog,
@@ -22,7 +23,6 @@ import {
   DialogDescription,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import ReviewSummarizer from './review-summarizer';
@@ -30,6 +30,9 @@ import ChatSheet from './chat-sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+
 
 interface ServiceCardProps {
   service: Service;
@@ -38,6 +41,7 @@ interface ServiceCardProps {
   onBookNow?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onStatusUpdate?: (serviceId: string, status: 'completed') => void;
 }
 
 export default function ServiceCard({
@@ -47,10 +51,15 @@ export default function ServiceCard({
   onBookNow,
   onEdit,
   onDelete,
+  onStatusUpdate,
 }: ServiceCardProps) {
   const [isChatOpen, setChatOpen] = React.useState(false);
   const [isReviewOpen, setReviewOpen] = React.useState(false);
-  const reviewsText = service.reviews.map(r => r.text);
+  const [reviewText, setReviewText] = React.useState('');
+  const [reviewRating, setReviewRating] = React.useState(5);
+  const [reviewPhoto, setReviewPhoto] = React.useState<File | null>(null);
+
+  const reviewsText = service.reviews?.map(r => r.text) || [];
   const { toast } = useToast();
 
   const handleCall = () => {
@@ -58,23 +67,54 @@ export default function ServiceCard({
       title: 'Initiating Call...',
       description: `Connecting you with ${service.provider}.`,
     });
-    // Dummy action
     console.log(`Calling ${service.provider}`);
   };
 
   const handleStatusUpdate = () => {
-      toast({
-      title: 'Status Updated',
-      description: `Service "${service.title}" is now marked as complete.`,
-    });
+    if (onStatusUpdate) {
+        onStatusUpdate(service.id, 'completed');
+    }
   }
   
-  const handleReviewSubmit = () => {
-    toast({
-        title: 'Review Submitted!',
-        description: 'Thank you for your feedback.',
-    });
-    setReviewOpen(false);
+  const handleReviewSubmit = async () => {
+    if (!reviewText) {
+        toast({variant: 'destructive', title: 'Review text cannot be empty'});
+        return;
+    }
+    if (!user) {
+        toast({variant: 'destructive', title: 'You must be logged in to leave a review'});
+        return;
+    }
+
+    try {
+        const serviceRef = doc(db, 'services', service.id);
+        const newReview = {
+            id: doc(db, 'reviews').id, // Generate a new ID
+            author: user.name || user.email,
+            rating: reviewRating,
+            text: reviewText,
+            // photoUrl will be handled by backend/upload logic
+        };
+        await updateDoc(serviceRef, {
+            reviews: arrayUnion(newReview)
+        });
+
+        toast({
+            title: 'Review Submitted!',
+            description: 'Thank you for your feedback.',
+        });
+        setReviewOpen(false);
+        setReviewText('');
+        setReviewRating(5);
+        setReviewPhoto(null);
+    } catch (error) {
+        console.error("Error submitting review:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to submit review. Please try again.',
+        });
+    }
   }
 
   const isServiceCompleted = service.bookingStatus === 'completed';
@@ -176,7 +216,9 @@ export default function ServiceCard({
                 )}
 
                 <p className="font-body text-foreground/80 text-lg">{service.description}</p>
-                <ReviewSummarizer reviews={reviewsText} />
+                
+                {reviewsText.length > 0 && <ReviewSummarizer reviews={reviewsText} />}
+                
                 <div>
                   <div className='flex justify-between items-center'>
                     <h3 className="font-headline text-3xl mt-8 mb-4">Reviews</h3>
@@ -193,10 +235,10 @@ export default function ServiceCard({
                             </DialogHeader>
                             <div className='py-4 space-y-4 font-body'>
                                 <div className='flex justify-center text-accent gap-2'>
-                                     {[...Array(5)].map((_, i) => <Star key={i} className="h-8 w-8 cursor-pointer hover:scale-110 transition-transform fill-current"/>)}
+                                     {[...Array(5)].map((_, i) => <Star key={i} onClick={() => setReviewRating(i + 1)} className={`h-8 w-8 cursor-pointer hover:scale-110 transition-transform ${i < reviewRating ? 'fill-current' : ''}`}/>)}
                                 </div>
-                                <Textarea placeholder="Share your experience..."/>
-                                <Input type="file" />
+                                <Textarea placeholder="Share your experience..." value={reviewText} onChange={e => setReviewText(e.target.value)}/>
+                                <Input type="file" onChange={e => setReviewPhoto(e.target.files?.[0] ?? null)} />
                             </div>
                             <DialogFooter>
                                 <Button onClick={handleReviewSubmit} className='btn-gradient'>Submit Review</Button>
@@ -206,7 +248,7 @@ export default function ServiceCard({
                     )}
                   </div>
                   <div className="space-y-6">
-                    {service.reviews.map(review => (
+                    {service.reviews?.map(review => (
                        <div key={review.id} className="border-t pt-6 border-white/10">
                         <div className="flex items-center justify-between">
                             <p className="font-body font-bold text-lg">{review.author}</p>
@@ -219,6 +261,7 @@ export default function ServiceCard({
                         {review.photoUrl && <Image src={review.photoUrl} alt="review photo" width={100} height={100} className="mt-2 rounded-lg" />}
                       </div>
                     ))}
+                     {service.reviews?.length === 0 && <p className='text-muted-foreground font-body'>No reviews yet.</p>}
                   </div>
                 </div>
               </div>
