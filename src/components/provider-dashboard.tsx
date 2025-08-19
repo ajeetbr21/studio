@@ -8,6 +8,7 @@ import type { Service } from '@/lib/types';
 import { PlusCircle } from 'lucide-react';
 import ServiceForm from '@/components/service-form';
 import { useToast } from '@/hooks/use-toast';
+import AnalyticsDashboard from './analytics-dashboard';
 
 export default function ProviderDashboard() {
   const [services, setServices] = React.useState<Service[]>(
@@ -45,24 +46,30 @@ export default function ProviderDashboard() {
 
   return (
     <>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-headline tracking-tight">
-              Your Services
+            <h1 className="text-4xl font-headline tracking-tight">
+              Provider Dashboard
             </h1>
-            <p className="text-muted-foreground font-body">
-              Manage your service listings for the marketplace.
+            <p className="text-muted-foreground font-body text-lg">
+              Manage your services and track your performance.
             </p>
           </div>
-          <Button onClick={handleAddNew} className="font-headline">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add New Service
-          </Button>
         </header>
+        
+        <AnalyticsDashboard />
+
+        <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-headline tracking-tight">Your Services</h2>
+            <Button onClick={handleAddNew} className="font-headline btn-gradient shadow-lg">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add New Service
+            </Button>
+        </div>
 
         {services.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {services.map((service) => (
               <ServiceCard
                 key={service.id}
@@ -74,10 +81,10 @@ export default function ProviderDashboard() {
             ))}
           </div>
         ) : (
-           <div className="text-center py-16 border-2 border-dashed rounded-lg flex flex-col items-center">
-            <h3 className="font-headline text-xl">No Services Yet</h3>
-            <p className="font-body text-muted-foreground mb-4">Add your first service to get started.</p>
-            <Button onClick={handleAddNew} className="font-headline">
+           <div className="text-center py-20 border-2 border-dashed rounded-xl bg-card/30">
+            <h3 className="font-headline text-2xl">No Services Yet</h3>
+            <p className="font-body text-muted-foreground mb-6 text-lg">Add your first service to get started.</p>
+            <Button onClick={handleAddNew} className="font-headline btn-gradient shadow-lg">
               <PlusCircle className="mr-2 h-4 w-4" />
               Add New Service
             </Button>

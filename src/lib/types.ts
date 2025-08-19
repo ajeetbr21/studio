@@ -5,6 +5,11 @@ export interface Review {
   text: string;
 }
 
+export interface ServiceTag {
+    name: 'top-rated' | 'new' | 'booked';
+    type: 'default' | 'destructive' | 'outline' | 'secondary'
+}
+
 export interface Service {
   id: string;
   title: string;
@@ -15,6 +20,7 @@ export interface Service {
   imageUrl: string;
   imageHint: string;
   reviews: Review[];
+  tags?: ServiceTag[];
 }
 
 export type Role = 'buyer' | 'provider';

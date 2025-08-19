@@ -60,15 +60,22 @@ export default function ServiceCard({
                   data-ai-hint={service.imageHint}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                 <div className="absolute top-2 left-2">
+                  {service.tags?.map((tag, i) => (
+                    <Badge key={i} variant={tag.type} className="mr-2 capitalize bg-gradient-to-r from-primary/80 to-accent/80 text-primary-foreground border-none">
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
                 <div className="absolute bottom-0 p-4">
-                  <CardTitle className="font-headline text-xl text-primary-foreground">
+                  <CardTitle className="font-headline text-2xl text-primary-foreground">
                     {service.title}
                   </CardTitle>
                 </div>
               </div>
             </DialogTrigger>
             <div className="p-4 pb-0">
-               <CardDescription className="font-body flex items-center gap-2">
+               <CardDescription className="font-body flex items-center gap-2 text-base">
                  <User className="w-4 h-4" /> {service.provider}
               </CardDescription>
             </div>
@@ -80,23 +87,23 @@ export default function ServiceCard({
             </div>
              <div className="flex items-center gap-2 text-muted-foreground">
                 <DollarSign className="w-4 h-4"/>
-                <span className="font-body font-bold text-foreground text-lg">${service.price}</span>
+                <span className="font-body font-bold text-foreground text-2xl">${service.price}</span>
             </div>
           </CardContent>
           <CardFooter className="p-4 pt-0 flex gap-2">
             {role === 'buyer' ? (
               <>
-                <Button onClick={onBookNow} className="w-full font-headline">Book Now</Button>
-                <Button variant="outline" size="icon" onClick={() => setChatOpen(true)}>
+                <Button onClick={onBookNow} className="w-full font-headline btn-gradient text-lg h-12 shadow-lg">Book Now</Button>
+                <Button variant="outline" size="icon" className="h-12 w-12" onClick={() => setChatOpen(true)}>
                   <MessageSquare />
                 </Button>
               </>
             ) : (
               <>
-                <Button onClick={onEdit} variant="outline" className="w-full font-headline">
+                <Button onClick={onEdit} variant="outline" className="w-full font-headline text-lg h-12">
                   <Edit className="mr-2 h-4 w-4" /> Edit
                 </Button>
-                <Button onClick={onDelete} variant="destructive" size="icon">
+                <Button onClick={onDelete} variant="destructive" size="icon" className="h-12 w-12">
                   <Trash2 />
                 </Button>
               </>
@@ -104,33 +111,33 @@ export default function ServiceCard({
           </CardFooter>
         </Card>
         
-        <DialogContent className="max-w-2xl w-full h-[90vh] flex flex-col bg-card/80 backdrop-blur-sm p-0">
+        <DialogContent className="max-w-2xl w-full h-[90vh] flex flex-col bg-card/80 backdrop-blur-sm p-0 rounded-2xl">
             <DialogHeader className="p-6 pb-2">
-                <DialogTitle className="font-headline text-3xl">{service.title}</DialogTitle>
-                <DialogDescription className="font-body flex items-center gap-4">
+                <DialogTitle className="font-headline text-4xl">{service.title}</DialogTitle>
+                <DialogDescription className="font-body flex items-center gap-4 text-base">
                     <span><User className="inline-block mr-2 h-4 w-4"/>{service.provider}</span>
                     <span className="flex items-center gap-1"><Tag className="inline-block mr-2 h-4 w-4"/>{service.category}</span>
-                    <span className="text-lg font-bold text-primary">${service.price}</span>
+                    <span className="text-2xl font-bold text-primary">${service.price}</span>
                 </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1">
               <div className="px-6 pb-6">
-                <Image src={service.imageUrl} alt={service.title} width={800} height={400} className="rounded-lg mb-4 h-64 w-full object-cover" data-ai-hint={service.imageHint} />
-                <p className="font-body text-foreground/80">{service.description}</p>
+                <Image src={service.imageUrl} alt={service.title} width={800} height={400} className="rounded-lg mb-6 h-64 w-full object-cover" data-ai-hint={service.imageHint} />
+                <p className="font-body text-foreground/80 text-lg">{service.description}</p>
                 <ReviewSummarizer reviews={reviewsText} />
                 <div>
-                  <h3 className="font-headline text-xl mt-6 mb-2">Reviews</h3>
-                  <div className="space-y-4">
+                  <h3 className="font-headline text-3xl mt-8 mb-4">Reviews</h3>
+                  <div className="space-y-6">
                     {service.reviews.map(review => (
-                       <div key={review.id} className="border-t pt-4">
+                       <div key={review.id} className="border-t pt-6 border-white/10">
                         <div className="flex items-center justify-between">
-                            <p className="font-body font-bold">{review.author}</p>
+                            <p className="font-body font-bold text-lg">{review.author}</p>
                             <div className="flex items-center gap-1 text-accent">
-                                {Array.from({length: review.rating}).map((_, i) => <Star key={i} className="h-4 w-4 fill-current"/>)}
-                                {Array.from({length: 5 - review.rating}).map((_, i) => <Star key={i} className="h-4 w-4"/>)}
+                                {Array.from({length: review.rating}).map((_, i) => <Star key={i} className="h-5 w-5 fill-current"/>)}
+                                {Array.from({length: 5 - review.rating}).map((_, i) => <Star key={i} className="h-5 w-5"/>)}
                             </div>
                         </div>
-                        <p className="font-body text-muted-foreground">{review.text}</p>
+                        <p className="font-body text-muted-foreground mt-1">{review.text}</p>
                       </div>
                     ))}
                   </div>

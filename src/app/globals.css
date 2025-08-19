@@ -5,25 +5,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 20% 97%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 222 84% 53%;
+    --primary: 216 91% 54%;
     --primary-foreground: 0 0% 98%;
     --secondary: 215 30% 18%;
     --secondary-foreground: 0 0% 98%;
     --muted: 215 20.2% 65.1%;
     --muted-foreground: 215 25% 27%;
-    --accent: 51 100% 50%;
+    --accent: 45 93% 58%;
     --accent-foreground: 224 71.4% 4.1%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 215 20.2% 65.1%;
     --input: 215 20.2% 65.1%;
-    --ring: 222 84% 53%;
+    --ring: 216 91% 54%;
     --radius: 0.8rem;
 
     --chart-1: 12 76% 61%;
@@ -40,19 +40,19 @@
     --card-foreground: 0 0% 98%;
     --popover: 215 30% 18%;
     --popover-foreground: 0 0% 98%;
-    --primary: 222 84% 53%;
+    --primary: 216 91% 54%;
     --primary-foreground: 0 0% 98%;
     --secondary: 215 25% 25%;
     --secondary-foreground: 0 0% 98%;
     --muted: 215 25% 25%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 51 100% 50%;
+    --accent: 45 93% 58%;
     --accent-foreground: 224 71.4% 4.1%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 215 25% 28%;
     --input: 215 25% 28%;
-    --ring: 222 84% 53%;
+    --ring: 216 91% 54%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -68,5 +68,14 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn-gradient {
+      @apply bg-gradient-to-r from-primary to-accent text-primary-foreground;
+      @apply hover:from-primary/90 hover:to-accent/90;
+      @apply transition-all duration-300 ease-in-out;
+      @apply hover:shadow-[0_0_20px_theme(colors.primary/50%),0_0_20px_theme(colors.accent/50%)];
   }
 }
