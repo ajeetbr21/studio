@@ -16,6 +16,20 @@ export interface ServiceTag {
 export type BookingStatus = 'requested' | 'in progress' | 'completed' | 'cancelled';
 export type PaymentStatus = 'pending' | 'in escrow' | 'cleared' | 'refunded';
 
+export interface Booking {
+  id: string;
+  serviceId: string;
+  serviceTitle: string;
+  providerId: string;
+  buyerId: string;
+  buyerName: string;
+  price: number;
+  status: BookingStatus;
+  paymentStatus: PaymentStatus;
+  createdAt: any; // Firestore timestamp
+}
+
+
 export interface Service {
   id: string;
   title: string;

@@ -29,10 +29,18 @@ export default function BuyerDashboard({ user }: { user: User | null }) {
       setAllServices(servicesData);
       setFilteredServices(servicesData);
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching services:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch services from the database.',
+      });
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleBookNow = async (service: Service) => {
     if (!user) {
@@ -52,8 +60,6 @@ export default function BuyerDashboard({ user }: { user: User | null }) {
         return;
     }
 
-    console.log('Booking service:', service.title);
-    
     try {
         await addDoc(collection(db, "bookings"), {
             serviceId: service.id,
@@ -73,10 +79,11 @@ export default function BuyerDashboard({ user }: { user: User | null }) {
         });
 
     } catch(error: any) {
+        console.error("Booking failed:", error);
         toast({
             variant: 'destructive',
             title: 'Booking Failed',
-            description: error.message,
+            description: 'There was an error while trying to book this service. Please try again.',
         });
     }
 

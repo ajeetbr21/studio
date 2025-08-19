@@ -23,6 +23,7 @@ export default function ProviderDashboard({ user }: { user: User | null }) {
   React.useEffect(() => {
     if (!user) {
         setLoading(false);
+        setServices([]);
         return;
     };
     
@@ -35,28 +36,42 @@ export default function ProviderDashboard({ user }: { user: User | null }) {
       });
       setServices(servicesData);
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching provider services:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not fetch your services."
+        });
+        setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, toast]);
 
   const handleSaveService = async (serviceData: Partial<Service>) => {
     if (!user) return;
 
-    if (editingService) {
-      // Update existing service
-      const serviceRef = doc(db, "services", editingService.id);
-      await updateDoc(serviceRef, serviceData);
-      toast({ title: 'Service Updated', description: `"${serviceData.title}" has been updated.` });
-    } else {
-      // Create new service
-      await addDoc(collection(db, "services"), {
-        ...serviceData,
-        providerId: user.id,
-        provider: user.name || user.email,
-        createdAt: serverTimestamp()
-      });
-      toast({ title: 'Service Created', description: `"${serviceData.title}" has been added.` });
+    try {
+        if (editingService) {
+          // Update existing service
+          const serviceRef = doc(db, "services", editingService.id);
+          await updateDoc(serviceRef, serviceData);
+          toast({ title: 'Service Updated', description: `"${serviceData.title}" has been updated.` });
+        } else {
+          // Create new service
+          await addDoc(collection(db, "services"), {
+            ...serviceData,
+            providerId: user.id,
+            provider: user.name || user.email,
+            createdAt: serverTimestamp(),
+            reviews: [],
+          });
+          toast({ title: 'Service Created', description: `"${serviceData.title}" has been added.` });
+        }
+    } catch(error) {
+        console.error("Failed to save service:", error);
+        toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the service. Please try again.' });
     }
     setEditingService(null);
     setIsFormOpen(false);
@@ -67,9 +82,17 @@ export default function ProviderDashboard({ user }: { user: User | null }) {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (serviceId: string) => {
-    await deleteDoc(doc(db, "services", serviceId));
-    toast({ variant: 'destructive', title: 'Service Deleted', description: 'The service has been removed.' });
+  const handleDelete = async (serviceId: string, serviceTitle: string) => {
+    // Optimistic deletion
+    setServices(prev => prev.filter(s => s.id !== serviceId));
+    try {
+        await deleteDoc(doc(db, "services", serviceId));
+        toast({ title: 'Service Deleted', description: `"${serviceTitle}" has been removed.` });
+    } catch (error) {
+        console.error("Failed to delete service:", error);
+        toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete service. Please try again.' });
+        // Re-fetch or revert state if delete fails
+    }
   };
   
   const handleAddNew = () => {
@@ -135,7 +158,7 @@ export default function ProviderDashboard({ user }: { user: User | null }) {
                 role="provider"
                 user={user}
                 onEdit={() => handleEdit(service)}
-                onDelete={() => handleDelete(service.id)}
+                onDelete={() => handleDelete(service.id, service.title)}
               />
             ))}
           </div>

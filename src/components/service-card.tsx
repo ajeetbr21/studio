@@ -31,7 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, getDoc, writeBatch } from 'firebase/firestore';
 
 
 interface ServiceCardProps {
@@ -58,21 +58,38 @@ export default function ServiceCard({
   const [reviewText, setReviewText] = React.useState('');
   const [reviewRating, setReviewRating] = React.useState(5);
   const [reviewPhoto, setReviewPhoto] = React.useState<File | null>(null);
+  const [currentService, setCurrentService] = React.useState<Service>(service);
 
-  const reviewsText = service.reviews?.map(r => r.text) || [];
   const { toast } = useToast();
 
+  const refreshServiceData = React.useCallback(async () => {
+    try {
+      const serviceRef = doc(db, 'services', currentService.id);
+      const docSnap = await getDoc(serviceRef);
+      if (docSnap.exists()) {
+        setCurrentService({ id: docSnap.id, ...docSnap.data() } as Service);
+        toast({title: "Data refreshed", description: "Latest service data loaded."})
+      }
+    } catch (error) {
+        console.error("Error refreshing service data", error);
+        toast({variant: 'destructive', title: "Refresh failed"})
+    }
+  }, [currentService.id, toast]);
+
+
+  const reviewsText = currentService.reviews?.map(r => r.text) || [];
+  
   const handleCall = () => {
     toast({
       title: 'Initiating Call...',
-      description: `Connecting you with ${service.provider}.`,
+      description: `Connecting you with ${currentService.provider}.`,
     });
-    console.log(`Calling ${service.provider}`);
+    console.log(`Calling ${currentService.provider}`);
   };
 
   const handleStatusUpdate = () => {
     if (onStatusUpdate) {
-        onStatusUpdate(service.id, 'completed');
+        onStatusUpdate(currentService.id, 'completed');
     }
   }
   
@@ -87,17 +104,28 @@ export default function ServiceCard({
     }
 
     try {
-        const serviceRef = doc(db, 'services', service.id);
+        const serviceRef = doc(db, 'services', currentService.id);
+        const batch = writeBatch(db);
+
         const newReview = {
-            id: doc(db, 'reviews').id, // Generate a new ID
-            author: user.name || user.email,
+            id: doc(db, 'reviews').id, // Generate a new ID locally
+            author: user.name || user.email!,
             rating: reviewRating,
             text: reviewText,
-            // photoUrl will be handled by backend/upload logic
+            // photoUrl will be handled by backend/upload logic in a real app
         };
-        await updateDoc(serviceRef, {
+
+        batch.update(serviceRef, {
             reviews: arrayUnion(newReview)
         });
+
+        await batch.commit();
+
+        // Optimistically update UI
+        setCurrentService(prev => ({
+            ...prev,
+            reviews: [...(prev.reviews || []), newReview]
+        }));
 
         toast({
             title: 'Review Submitted!',
@@ -117,7 +145,7 @@ export default function ServiceCard({
     }
   }
 
-  const isServiceCompleted = service.bookingStatus === 'completed';
+  const isServiceCompleted = currentService.bookingStatus === 'completed';
 
   return (
     <>
@@ -127,43 +155,43 @@ export default function ServiceCard({
             <DialogTrigger asChild>
               <div className="relative cursor-pointer">
                 <Image
-                  src={service.imageUrl}
-                  alt={service.title}
+                  src={currentService.imageUrl}
+                  alt={currentService.title}
                   width={400}
                   height={250}
                   className="w-full h-48 object-cover"
-                  data-ai-hint={service.imageHint}
+                  data-ai-hint={currentService.imageHint}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                  <div className="absolute top-2 left-2 flex gap-2">
-                  {service.tags?.map((tag, i) => (
+                  {currentService.tags?.map((tag, i) => (
                     <Badge key={i} variant={tag.type} className="mr-2 capitalize bg-gradient-to-r from-primary/80 to-accent/80 text-primary-foreground border-none">
                       {tag.name}
                     </Badge>
                   ))}
-                   {service.bookingStatus && <Badge variant="outline" className="capitalize backdrop-blur-sm bg-background/50">{service.bookingStatus}</Badge>}
+                   {currentService.bookingStatus && <Badge variant="outline" className="capitalize backdrop-blur-sm bg-background/50">{currentService.bookingStatus}</Badge>}
                 </div>
                 <div className="absolute bottom-0 p-4">
                   <CardTitle className="font-headline text-2xl text-primary-foreground">
-                    {service.title}
+                    {currentService.title}
                   </CardTitle>
                 </div>
               </div>
             </DialogTrigger>
             <div className="p-4 pb-0">
                <CardDescription className="font-body flex items-center gap-2 text-base">
-                 <User className="w-4 h-4" /> {service.provider}
+                 <User className="w-4 h-4" /> {currentService.provider}
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="p-4 flex-1">
              <div className="flex items-center gap-2 mb-2">
                 <Tag className="w-4 h-4 text-muted-foreground"/>
-                <Badge variant="secondary" className='font-body'>{service.category}</Badge>
+                <Badge variant="secondary" className='font-body'>{currentService.category}</Badge>
             </div>
              <div className="flex items-center gap-2 text-muted-foreground">
                 <DollarSign className="w-4 h-4"/>
-                <span className="font-body font-bold text-foreground text-2xl">${service.price}</span>
+                <span className="font-body font-bold text-foreground text-2xl">${currentService.price}</span>
             </div>
           </CardContent>
           <CardFooter className="p-4 pt-0 flex gap-2">
@@ -193,29 +221,30 @@ export default function ServiceCard({
         </Card>
         
         <DialogContent className="max-w-2xl w-full h-[90vh] flex flex-col bg-card/80 backdrop-blur-sm p-0 rounded-2xl">
-            <DialogHeader className="p-6 pb-2">
-                <DialogTitle className="font-headline text-4xl">{service.title}</DialogTitle>
+            <DialogHeader className="p-6 pb-2 relative">
+                <DialogTitle className="font-headline text-4xl">{currentService.title}</DialogTitle>
                 <DialogDescription className="font-body flex items-center gap-4 text-base">
-                    <span><User className="inline-block mr-2 h-4 w-4"/>{service.provider}</span>
-                    <span className="flex items-center gap-1"><Tag className="inline-block mr-2 h-4 w-4"/>{service.category}</span>
-                    <span className="text-2xl font-bold text-primary">${service.price}</span>
+                    <span><User className="inline-block mr-2 h-4 w-4"/>{currentService.provider}</span>
+                    <span className="flex items-center gap-1"><Tag className="inline-block mr-2 h-4 w-4"/>{currentService.category}</span>
+                    <span className="text-2xl font-bold text-primary">${currentService.price}</span>
                 </DialogDescription>
+                <Button onClick={refreshServiceData} size="icon" variant="ghost" className="absolute top-4 right-16"><RefreshCw /></Button>
             </DialogHeader>
             <ScrollArea className="flex-1">
               <div className="px-6 pb-6">
-                <Image src={service.imageUrl} alt={service.title} width={800} height={400} className="rounded-lg mb-6 h-64 w-full object-cover" data-ai-hint={service.imageHint} />
+                <Image src={currentService.imageUrl} alt={currentService.title} width={800} height={400} className="rounded-lg mb-6 h-64 w-full object-cover" data-ai-hint={currentService.imageHint} />
                 
-                {role === 'provider' && service.bookingStatus && (
+                {role === 'provider' && currentService.bookingStatus && (
                     <Card className='mb-6 bg-secondary/30'>
                         <CardHeader><CardTitle className='font-headline text-xl'>Update Status</CardTitle></CardHeader>
                         <CardContent className='flex items-center gap-4'>
-                            <p className='font-body'>Current status: <Badge>{service.bookingStatus}</Badge></p>
+                            <p className='font-body'>Current status: <Badge>{currentService.bookingStatus}</Badge></p>
                             <Button onClick={handleStatusUpdate}><RefreshCw className='mr-2 h-4 w-4'/> Mark as Complete</Button>
                         </CardContent>
                     </Card>
                 )}
 
-                <p className="font-body text-foreground/80 text-lg">{service.description}</p>
+                <p className="font-body text-foreground/80 text-lg">{currentService.description}</p>
                 
                 {reviewsText.length > 0 && <ReviewSummarizer reviews={reviewsText} />}
                 
@@ -248,7 +277,7 @@ export default function ServiceCard({
                     )}
                   </div>
                   <div className="space-y-6">
-                    {service.reviews?.map(review => (
+                    {currentService.reviews?.map(review => (
                        <div key={review.id} className="border-t pt-6 border-white/10">
                         <div className="flex items-center justify-between">
                             <p className="font-body font-bold text-lg">{review.author}</p>
@@ -261,14 +290,14 @@ export default function ServiceCard({
                         {review.photoUrl && <Image src={review.photoUrl} alt="review photo" width={100} height={100} className="mt-2 rounded-lg" />}
                       </div>
                     ))}
-                     {service.reviews?.length === 0 && <p className='text-muted-foreground font-body'>No reviews yet.</p>}
+                     {(!currentService.reviews || currentService.reviews.length === 0) && <p className='text-muted-foreground font-body'>No reviews yet.</p>}
                   </div>
                 </div>
               </div>
             </ScrollArea>
         </DialogContent>
       </Dialog>
-      <ChatSheet open={isChatOpen} onOpenChange={setChatOpen} service={service} />
+      <ChatSheet open={isChatOpen} onOpenChange={setChatOpen} service={currentService} />
     </>
   );
 }
