@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { UploadCloud, CheckCircle, AlertTriangle, Hourglass } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertTriangle, Hourglass, ShieldQuestion } from 'lucide-react';
 import type { KycStatus } from '@/lib/types';
 
 interface KycModalProps {
@@ -30,40 +30,38 @@ export default function KycModal({
 }: KycModalProps) {
   const [front, setFront] = React.useState<File | null>(null);
   const [back, setBack] = React.useState<File | null>(null);
+  // This state allows a rejected user to re-enter the submission form
+  const [isResubmitting, setIsResubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (status !== 'rejected') {
+        setIsResubmitting(false);
+    }
+  }, [status]);
+
 
   const handleSubmit = () => {
     onSubmit({ front, back });
+    setIsResubmitting(false);
   };
   
   const StatusDisplay = () => {
-    switch(status) {
-      case 'verified':
-        return <div className='flex flex-col items-center gap-4 text-center p-8 bg-green-500/10 rounded-lg'>
-            <CheckCircle className='h-16 w-16 text-green-500'/>
-            <h3 className='font-headline text-2xl text-green-500'>KYC Verified</h3>
-            <p className='font-body text-muted-foreground'>Your account is fully verified. You can now access all features.</p>
-             <Button onClick={() => onOpenChange(false)} className='mt-4'>Done</Button>
-        </div>
-      case 'pending':
-         return <div className='flex flex-col items-center gap-4 text-center p-8 bg-yellow-500/10 rounded-lg'>
-            <Hourglass className='h-16 w-16 text-yellow-500'/>
-            <h3 className='font-headline text-2xl text-yellow-500'>KYC Pending</h3>
-            <p className='font-body text-muted-foreground'>Your documents are under review. This usually takes 24-48 hours.</p>
-        </div>
-      case 'rejected':
-         return <div className='flex flex-col items-center gap-4 text-center p-8 bg-red-500/10 rounded-lg'>
-            <AlertTriangle className='h-16 w-16 text-red-500'/>
-            <h3 className='font-headline text-2xl text-red-500'>KYC Rejected</h3>
+    if (status === 'rejected' && !isResubmitting) {
+         return <div className='flex flex-col items-center gap-4 text-center p-8 bg-destructive/10 rounded-lg'>
+            <AlertTriangle className='h-16 w-16 text-destructive'/>
+            <h3 className='font-headline text-2xl text-destructive'>KYC Rejected</h3>
             <p className='font-body text-muted-foreground'>There was an issue with your documents. Please re-upload clear images.</p>
-             <Button onClick={handleSubmit} className='mt-4 btn-gradient'>Re-submit Documents</Button>
+             <Button onClick={() => setIsResubmitting(true)} className='mt-4 btn-gradient'>Re-submit Documents</Button>
         </div>
-      default:
+    }
+
+    if (status === 'not-started' || isResubmitting) {
         return (
              <>
                 <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl text-center">Verify Your Identity</DialogTitle>
+                    <DialogTitle className="font-headline text-2xl text-center">Verify Your Identity (Optional)</DialogTitle>
                     <DialogDescription className="text-center font-body">
-                        Please upload your Aadhaar card for KYC verification. This is required to use our platform.
+                        To access all platform features, please upload your Aadhaar card for KYC verification.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-4 font-body">
@@ -88,6 +86,32 @@ export default function KycModal({
                     </Button>
                 </DialogFooter>
             </>
+        )
+    }
+
+    switch(status) {
+      case 'verified':
+        return <div className='flex flex-col items-center gap-4 text-center p-8 bg-green-500/10 rounded-lg'>
+            <CheckCircle className='h-16 w-16 text-green-500'/>
+            <h3 className='font-headline text-2xl text-green-500'>KYC Verified</h3>
+            <p className='font-body text-muted-foreground'>Your account is fully verified. You can now access all features.</p>
+             <Button onClick={() => onOpenChange(false)} className='mt-4'>Done</Button>
+        </div>
+      case 'pending':
+         return <div className='flex flex-col items-center gap-4 text-center p-8 bg-yellow-500/10 rounded-lg'>
+            <Hourglass className='h-16 w-16 text-yellow-500'/>
+            <h3 className='font-headline text-2xl text-yellow-500'>KYC Pending</h3>
+            <p className='font-body text-muted-foreground'>Your documents are under review. This usually takes 24-48 hours.</p>
+        </div>
+      default:
+        // This case should not be reached due to the logic above, but it's a safe fallback.
+        return (
+             <div className='flex flex-col items-center gap-4 text-center p-8 bg-blue-500/10 rounded-lg'>
+                <ShieldQuestion className='h-16 w-16 text-blue-500'/>
+                <h3 className='font-headline text-2xl text-blue-500'>Start KYC Verification</h3>
+                <p className='font-body text-muted-foreground'>Verify your identity to unlock all features.</p>
+                <Button onClick={() => onOpenChange(false)} className='mt-4'>Start</Button>
+            </div>
         )
     }
   }

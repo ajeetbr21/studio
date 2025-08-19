@@ -17,19 +17,19 @@ export default function Home() {
   const [kycModalOpen, setKycModalOpen] = React.useState(false);
   const { toast } = useToast();
 
-  const handleLogin = (phone: string) => {
+  const handleLogin = (loginUser: Partial<User>) => {
     // Mock user creation/login
     const newUser: User = {
       id: `user-${Date.now()}`,
-      phone,
-      kycStatus: 'pending',
+      email: loginUser.email || 'user@example.com',
+      name: loginUser.name,
+      photoURL: loginUser.photoURL,
+      kycStatus: 'not-started', // Start with not-started status
     };
     setUser(newUser);
     setAuthModalOpen(false);
-    // Open KYC modal for new users or those with pending/rejected KYC
-    if (newUser.kycStatus !== 'verified') {
-      setTimeout(() => setKycModalOpen(true), 500);
-    }
+    // KYC is now optional, so we don't automatically open the modal.
+    // A user can choose to open it from their profile/dashboard.
   };
 
   const handleKycSubmit = (details: {
@@ -38,10 +38,10 @@ export default function Home() {
   }) => {
     console.log('KYC Submitted:', details);
     if (user) {
-      setUser({ ...user, kycStatus: 'verified' }); // Mock verification
+      setUser({ ...user, kycStatus: 'pending' }); // Set to pending after submission
        toast({
         title: 'KYC Submitted!',
-        description: 'Your documents have been submitted for verification.',
+        description: 'Your documents are now pending verification.',
       });
     }
     setKycModalOpen(false);
@@ -59,6 +59,7 @@ export default function Home() {
         user={user}
         onLoginClick={() => setAuthModalOpen(true)}
         onLogoutClick={handleLogout}
+        onKycClick={() => setKycModalOpen(true)}
       />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <AnimatePresence mode="wait">

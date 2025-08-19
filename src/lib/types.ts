@@ -35,6 +35,8 @@ export type KycStatus = 'pending' | 'verified' | 'rejected' | 'not-started';
 
 export interface User {
   id: string;
-  phone: string;
+  email: string;
+  name?: string;
+  photoURL?: string;
   kycStatus: KycStatus;
 }

@@ -5,7 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Briefcase, LayoutGrid, Sparkles, Bell, User, LogOut, ShieldCheck, Mail } from 'lucide-react';
+import { Briefcase, LayoutGrid, Sparkles, Bell, User, LogOut, ShieldCheck, Mail, FileCheck2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Role, User as UserType } from '@/lib/types';
 import {
@@ -25,9 +25,10 @@ interface HeaderProps {
   user: UserType | null;
   onLoginClick: () => void;
   onLogoutClick: () => void;
+  onKycClick: () => void;
 }
 
-export default function Header({ role, setRole, user, onLoginClick, onLogoutClick }: HeaderProps) {
+export default function Header({ role, setRole, user, onLoginClick, onLogoutClick, onKycClick }: HeaderProps) {
   return (
     <header className="sticky top-4 z-30 flex h-20 items-center gap-4 border bg-background/80 backdrop-blur-xl px-4 md:px-6 mx-4 md:mx-6 rounded-2xl shadow-lg">
       <Link href="/" className="flex items-center gap-2">
@@ -63,56 +64,67 @@ export default function Header({ role, setRole, user, onLoginClick, onLogoutClic
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Mail className="h-6 w-6" />
-           <span className="absolute top-1 right-1 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-accent"></span>
-            </span>
-        </Button>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-6 w-6" />
-          <span className="absolute top-1 right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-          </span>
-        </Button>
         <ThemeToggle />
         {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className='h-10 w-10 shadow-lg'>
-                  <AvatarImage src={`https://placehold.co/40x40.png`} alt="User" />
-                  <AvatarFallback>{user.phone.slice(0,2)}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 font-body" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">My Account</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user.phone}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-               <DropdownMenuItem>
-                <KycStatusBadge status={user.kycStatus} />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link href="/admin" className='flex items-center'>
-                    <ShieldCheck className="mr-2 h-4 w-4" />
-                    Admin Panel
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onLogoutClick}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <>
+            <Button variant="ghost" size="icon" className="relative">
+              <Mail className="h-6 w-6" />
+               <span className="absolute top-1 right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-accent"></span>
+                </span>
+            </Button>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-6 w-6" />
+              <span className="absolute top-1 right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+            </Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className='h-10 w-10 shadow-lg'>
+                    <AvatarImage src={user.photoURL} alt={user.name || user.email} />
+                    <AvatarFallback>{(user.name || user.email).slice(0,2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 font-body bg-card/80 backdrop-blur-sm" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                    <div className="flex items-center gap-3">
+                         <Avatar className='h-12 w-12 shadow-lg'>
+                            <AvatarImage src={user.photoURL} alt={user.name || user.email} />
+                            <AvatarFallback>{(user.name || user.email).slice(0,2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col space-y-1">
+                            <p className="text-md font-headline leading-none">{user.name || 'User'}</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                                {user.email}
+                            </p>
+                        </div>
+                    </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onKycClick}>
+                    <FileCheck2 className="mr-2 h-4 w-4" />
+                    <span>KYC Status:</span>
+                    <KycStatusBadge status={user.kycStatus} />
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                    <Link href="/admin" className='flex items-center w-full'>
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        Admin Panel
+                    </Link>
+                </DropdownMenuItem>
+                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogoutClick}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         ) : (
           <Button onClick={onLoginClick} className="font-headline btn-gradient text-lg h-12 px-8 shadow-lg">Login</Button>
         )}
