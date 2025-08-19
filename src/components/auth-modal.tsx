@@ -16,9 +16,11 @@ import { Smartphone, KeyRound } from 'lucide-react';
 export default function AuthModal({
   open,
   onOpenChange,
+  onLogin,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onLogin: (phone: string) => void;
 }) {
   const [step, setStep] = React.useState(1);
   const [phone, setPhone] = React.useState('');
@@ -27,10 +29,18 @@ export default function AuthModal({
 
   const handleSendOtp = () => {
     // Mock OTP sending
+    if (!/^\d{10}$/.test(phone)) {
+       toast({
+        variant: "destructive",
+        title: "Invalid Phone Number",
+        description: "Please enter a valid 10-digit phone number.",
+      });
+      return;
+    }
     console.log(`Sending OTP to ${phone}`);
     toast({
       title: "OTP Sent!",
-      description: "A one-time password has been sent to your phone.",
+      description: `A one-time password has been sent to ${phone}. (Hint: use 123456)`,
     });
     setStep(2);
   };
@@ -42,8 +52,13 @@ export default function AuthModal({
         title: "Login Successful",
         description: "Welcome back!",
       });
-      onOpenChange(false);
-      setStep(1);
+      onLogin(phone);
+      // Reset state for next time
+      setTimeout(() => {
+        setStep(1);
+        setPhone('');
+        setOtp('');
+      }, 500);
     } else {
       toast({
         variant: "destructive",
@@ -52,9 +67,20 @@ export default function AuthModal({
       });
     }
   };
+  
+  const handleDialogClose = (isOpen: boolean) => {
+    if(!isOpen) {
+       setTimeout(() => {
+        setStep(1);
+        setPhone('');
+        setOtp('');
+      }, 500);
+    }
+    onOpenChange(isOpen);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[425px] bg-card/80 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl text-center">
@@ -73,10 +99,11 @@ export default function AuthModal({
               <Input
                 id="phone"
                 type="tel"
-                placeholder="Phone Number"
+                placeholder="10-digit Phone Number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="pl-10 font-body"
+                maxLength={10}
               />
             </div>
           ) : (
@@ -95,7 +122,7 @@ export default function AuthModal({
         </div>
         <Button
           onClick={step === 1 ? handleSendOtp : handleVerifyOtp}
-          className="w-full font-headline text-lg"
+          className="w-full font-headline text-lg btn-gradient"
         >
           {step === 1 ? 'Send OTP' : 'Verify & Continue'}
         </Button>

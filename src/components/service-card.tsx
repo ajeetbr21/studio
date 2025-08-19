@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, MessageSquare, Edit, Trash2, Tag, DollarSign, User } from 'lucide-react';
-import type { Service, Role } from '@/lib/types';
+import { Star, MessageSquare, Edit, Trash2, Tag, DollarSign, User, Phone, Check, RefreshCw } from 'lucide-react';
+import type { Service, Role, User as UserType } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -21,14 +21,20 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import ReviewSummarizer from './review-summarizer';
 import ChatSheet from './chat-sheet';
+import { useToast } from '@/hooks/use-toast';
+import { Textarea } from './ui/textarea';
+import { Input } from './ui/input';
 
 interface ServiceCardProps {
   service: Service;
   role: Role;
+  user: UserType | null;
   onBookNow?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -37,12 +43,41 @@ interface ServiceCardProps {
 export default function ServiceCard({
   service,
   role,
+  user,
   onBookNow,
   onEdit,
   onDelete,
 }: ServiceCardProps) {
   const [isChatOpen, setChatOpen] = React.useState(false);
+  const [isReviewOpen, setReviewOpen] = React.useState(false);
   const reviewsText = service.reviews.map(r => r.text);
+  const { toast } = useToast();
+
+  const handleCall = () => {
+    toast({
+      title: 'Initiating Call...',
+      description: `Connecting you with ${service.provider}.`,
+    });
+    // Dummy action
+    console.log(`Calling ${service.provider}`);
+  };
+
+  const handleStatusUpdate = () => {
+      toast({
+      title: 'Status Updated',
+      description: `Service "${service.title}" is now marked as complete.`,
+    });
+  }
+  
+  const handleReviewSubmit = () => {
+    toast({
+        title: 'Review Submitted!',
+        description: 'Thank you for your feedback.',
+    });
+    setReviewOpen(false);
+  }
+
+  const isServiceCompleted = service.bookingStatus === 'completed';
 
   return (
     <>
@@ -60,12 +95,13 @@ export default function ServiceCard({
                   data-ai-hint={service.imageHint}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                 <div className="absolute top-2 left-2">
+                 <div className="absolute top-2 left-2 flex gap-2">
                   {service.tags?.map((tag, i) => (
                     <Badge key={i} variant={tag.type} className="mr-2 capitalize bg-gradient-to-r from-primary/80 to-accent/80 text-primary-foreground border-none">
                       {tag.name}
                     </Badge>
                   ))}
+                   {service.bookingStatus && <Badge variant="outline" className="capitalize backdrop-blur-sm bg-background/50">{service.bookingStatus}</Badge>}
                 </div>
                 <div className="absolute bottom-0 p-4">
                   <CardTitle className="font-headline text-2xl text-primary-foreground">
@@ -93,9 +129,14 @@ export default function ServiceCard({
           <CardFooter className="p-4 pt-0 flex gap-2">
             {role === 'buyer' ? (
               <>
-                <Button onClick={onBookNow} className="w-full font-headline btn-gradient text-lg h-12 shadow-lg">Book Now</Button>
+                <Button onClick={onBookNow} className="w-full font-headline btn-gradient text-lg h-12 shadow-lg" disabled={isServiceCompleted}>
+                    {isServiceCompleted ? 'Completed' : 'Book Now'}
+                </Button>
                 <Button variant="outline" size="icon" className="h-12 w-12" onClick={() => setChatOpen(true)}>
                   <MessageSquare />
+                </Button>
+                 <Button variant="outline" size="icon" className="h-12 w-12" onClick={handleCall}>
+                  <Phone />
                 </Button>
               </>
             ) : (
@@ -123,10 +164,47 @@ export default function ServiceCard({
             <ScrollArea className="flex-1">
               <div className="px-6 pb-6">
                 <Image src={service.imageUrl} alt={service.title} width={800} height={400} className="rounded-lg mb-6 h-64 w-full object-cover" data-ai-hint={service.imageHint} />
+                
+                {role === 'provider' && service.bookingStatus && (
+                    <Card className='mb-6 bg-secondary/30'>
+                        <CardHeader><CardTitle className='font-headline text-xl'>Update Status</CardTitle></CardHeader>
+                        <CardContent className='flex items-center gap-4'>
+                            <p className='font-body'>Current status: <Badge>{service.bookingStatus}</Badge></p>
+                            <Button onClick={handleStatusUpdate}><RefreshCw className='mr-2 h-4 w-4'/> Mark as Complete</Button>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <p className="font-body text-foreground/80 text-lg">{service.description}</p>
                 <ReviewSummarizer reviews={reviewsText} />
                 <div>
-                  <h3 className="font-headline text-3xl mt-8 mb-4">Reviews</h3>
+                  <div className='flex justify-between items-center'>
+                    <h3 className="font-headline text-3xl mt-8 mb-4">Reviews</h3>
+                    {isServiceCompleted && role === 'buyer' && (
+                       <Dialog open={isReviewOpen} onOpenChange={setReviewOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <Star className='mr-2 h-4 w-4'/> Leave a Review
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle className='font-headline'>Rate your experience</DialogTitle>
+                            </DialogHeader>
+                            <div className='py-4 space-y-4 font-body'>
+                                <div className='flex justify-center text-accent gap-2'>
+                                     {[...Array(5)].map((_, i) => <Star key={i} className="h-8 w-8 cursor-pointer hover:scale-110 transition-transform fill-current"/>)}
+                                </div>
+                                <Textarea placeholder="Share your experience..."/>
+                                <Input type="file" />
+                            </div>
+                            <DialogFooter>
+                                <Button onClick={handleReviewSubmit} className='btn-gradient'>Submit Review</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                       </Dialog>
+                    )}
+                  </div>
                   <div className="space-y-6">
                     {service.reviews.map(review => (
                        <div key={review.id} className="border-t pt-6 border-white/10">
@@ -138,6 +216,7 @@ export default function ServiceCard({
                             </div>
                         </div>
                         <p className="font-body text-muted-foreground mt-1">{review.text}</p>
+                        {review.photoUrl && <Image src={review.photoUrl} alt="review photo" width={100} height={100} className="mt-2 rounded-lg" />}
                       </div>
                     ))}
                   </div>

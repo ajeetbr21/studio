@@ -4,13 +4,13 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/service-card';
 import { MOCK_SERVICES } from '@/lib/mock-data';
-import type { Service } from '@/lib/types';
+import type { Service, User } from '@/lib/types';
 import { PlusCircle } from 'lucide-react';
 import ServiceForm from '@/components/service-form';
 import { useToast } from '@/hooks/use-toast';
 import AnalyticsDashboard from './analytics-dashboard';
 
-export default function ProviderDashboard() {
+export default function ProviderDashboard({ user }: { user: User | null }) {
   const [services, setServices] = React.useState<Service[]>(
     MOCK_SERVICES.slice(0, 2)
   ); // Assume first 2 services belong to this provider
@@ -40,6 +40,18 @@ export default function ProviderDashboard() {
   };
   
   const handleAddNew = () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to add a service.' });
+      return;
+    }
+     if (user.kycStatus !== 'verified') {
+        toast({
+            variant: 'destructive',
+            title: 'KYC Verification Required',
+            description: 'Please complete your KYC to add services.',
+        });
+        return;
+    }
     setEditingService(null);
     setIsFormOpen(true);
   }
@@ -75,6 +87,7 @@ export default function ProviderDashboard() {
                 key={service.id}
                 service={service}
                 role="provider"
+                user={user}
                 onEdit={() => handleEdit(service)}
                 onDelete={() => handleDelete(service.id)}
               />
