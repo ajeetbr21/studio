@@ -123,7 +123,7 @@ export default function AnalyticsDashboard() {
             <CardTitle className="font-headline text-2xl">Bookings Overview</CardTitle>
             <CardDescription className="font-body">January - June 2024</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-0">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <LineChart
                     accessibilityLayer
@@ -131,6 +131,8 @@ export default function AnalyticsDashboard() {
                     margin={{
                         left: 12,
                         right: 12,
+                        top: 12,
+                        bottom: 12
                     }}
                 >
                 <CartesianGrid vertical={false} />
@@ -147,6 +149,7 @@ export default function AnalyticsDashboard() {
                     indicator="line"
                     />}
                 />
+                 <ChartLegend content={<ChartLegendContent />} />
                 <Line
                     dataKey="desktop"
                     type="natural"
@@ -164,9 +167,6 @@ export default function AnalyticsDashboard() {
                 </LineChart>
             </ChartContainer>
             </CardContent>
-            <CardFooter>
-                 <ChartLegend content={<ChartLegendContent />} />
-            </CardFooter>
         </Card>
         
         <Card className="md:col-span-2 bg-card/60 backdrop-blur-xl shadow-lg border-border/20 rounded-xl flex flex-col">
