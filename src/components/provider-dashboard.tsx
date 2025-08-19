@@ -1,32 +1,65 @@
+
 "use client";
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '@/components/service-card';
-import { MOCK_SERVICES } from '@/lib/mock-data';
 import type { Service, User } from '@/lib/types';
 import { PlusCircle } from 'lucide-react';
 import ServiceForm from '@/components/service-form';
 import { useToast } from '@/hooks/use-toast';
 import AnalyticsDashboard from './analytics-dashboard';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from './ui/skeleton';
 
 export default function ProviderDashboard({ user }: { user: User | null }) {
-  const [services, setServices] = React.useState<Service[]>(
-    MOCK_SERVICES.slice(0, 2)
-  ); // Assume first 2 services belong to this provider
+  const [services, setServices] = React.useState<Service[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingService, setEditingService] = React.useState<Service | null>(null);
   const { toast } = useToast();
 
-  const handleSaveService = (service: Service) => {
+  React.useEffect(() => {
+    if (!user) {
+        setLoading(false);
+        return;
+    };
+    
+    setLoading(true);
+    const q = query(collection(db, "services"), where("providerId", "==", user.id));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const servicesData: Service[] = [];
+      querySnapshot.forEach((doc) => {
+        servicesData.push({ id: doc.id, ...doc.data() } as Service);
+      });
+      setServices(servicesData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleSaveService = async (serviceData: Partial<Service>) => {
+    if (!user) return;
+
     if (editingService) {
-      setServices(services.map((s) => (s.id === service.id ? service : s)));
-      toast({ title: 'Service Updated', description: `"${service.title}" has been updated.` });
+      // Update existing service
+      const serviceRef = doc(db, "services", editingService.id);
+      await updateDoc(serviceRef, serviceData);
+      toast({ title: 'Service Updated', description: `"${serviceData.title}" has been updated.` });
     } else {
-      setServices([...services, { ...service, id: `service-${Date.now()}` }]);
-      toast({ title: 'Service Created', description: `"${service.title}" has been added.` });
+      // Create new service
+      await addDoc(collection(db, "services"), {
+        ...serviceData,
+        providerId: user.id,
+        provider: user.name || user.email,
+        createdAt: serverTimestamp()
+      });
+      toast({ title: 'Service Created', description: `"${serviceData.title}" has been added.` });
     }
     setEditingService(null);
+    setIsFormOpen(false);
   };
 
   const handleEdit = (service: Service) => {
@@ -34,8 +67,8 @@ export default function ProviderDashboard({ user }: { user: User | null }) {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (serviceId: string) => {
-    setServices(services.filter((s) => s.id !== serviceId));
+  const handleDelete = async (serviceId: string) => {
+    await deleteDoc(doc(db, "services", serviceId));
     toast({ variant: 'destructive', title: 'Service Deleted', description: 'The service has been removed.' });
   };
   
@@ -54,6 +87,19 @@ export default function ProviderDashboard({ user }: { user: User | null }) {
     }
     setEditingService(null);
     setIsFormOpen(true);
+  }
+  
+  if (loading) {
+     return <Skeleton className="h-64 w-full" />;
+  }
+  
+  if (!user) {
+     return (
+        <div className="text-center py-20 border-2 border-dashed rounded-xl bg-card/30">
+            <h3 className="font-headline text-2xl">Please Log In</h3>
+            <p className="font-body text-muted-foreground mb-6 text-lg">You need to be logged in to manage your services.</p>
+        </div>
+     )
   }
 
   return (

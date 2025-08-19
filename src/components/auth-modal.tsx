@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -12,8 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Lock, LogIn } from 'lucide-react';
-import type { User } from '@/lib/types';
 import { Separator } from './ui/separator';
+import { auth, db } from '@/lib/firebase';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import type { User } from '@/lib/types';
+
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -40,45 +45,73 @@ const GoogleIcon = () => (
 export default function AuthModal({
   open,
   onOpenChange,
-  onLogin,
+  onLoginSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLogin: (user: Partial<User>) => void;
+  onLoginSuccess: () => void;
 }) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const { toast } = useToast();
 
-  const handleGoogleLogin = () => {
-    // Mock Google Login
-    toast({
-      title: 'Login Successful',
-      description: 'Welcome back, Alex!',
-    });
-    onLogin({
-      email: 'alex.doe@example.com',
-      name: 'Alex Doe',
-      photoURL: `https://placehold.co/40x40.png`,
-    });
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      const userRef = doc(db, "users", firebaseUser.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (!docSnap.exists()) {
+        const newUser: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email!,
+          name: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          kycStatus: 'not-started',
+        };
+        await setDoc(userRef, newUser);
+      }
+      
+      toast({
+        title: 'Login Successful',
+        description: `Welcome back, ${firebaseUser.displayName}!`,
+      });
+      onLoginSuccess();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+    }
     resetState();
   };
 
-  const handleEmailLogin = () => {
-    // Mock Email/Password Login
+  const handleEmailLogin = async () => {
     if (!email || !password) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please enter both email and password.',
-      });
+      toast({ variant: 'destructive', title: 'Missing Information', description: 'Please enter both email and password.' });
       return;
     }
-    toast({
-      title: 'Login Successful',
-      description: `Welcome back, ${email}!`,
-    });
-    onLogin({ email });
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({ title: 'Login Successful', description: `Welcome back!` });
+      onLoginSuccess();
+    } catch (error: any) {
+       // If sign-in fails, try to sign up
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = userCredential.user;
+            const newUser: User = {
+                id: firebaseUser.uid,
+                email: firebaseUser.email!,
+                kycStatus: 'not-started',
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+            toast({ title: 'Account Created', description: 'Welcome to SewaNow!' });
+            onLoginSuccess();
+        } catch (signupError: any) {
+            toast({ variant: 'destructive', title: 'Error', description: signupError.message });
+        }
+    }
     resetState();
   };
   
@@ -104,7 +137,7 @@ export default function AuthModal({
             Welcome to SewaNow
           </DialogTitle>
           <DialogDescription className="text-center font-body text-base">
-            Sign in to continue
+            Sign in or create an account
           </DialogDescription>
         </DialogHeader>
         
@@ -147,7 +180,7 @@ export default function AuthModal({
                     className="w-full font-headline text-lg btn-gradient h-12"
                     >
                     <LogIn className="mr-2 h-5 w-5" />
-                    Login with Email
+                    Login or Sign Up
                 </Button>
             </div>
             <p className="text-center text-muted-foreground text-xs font-body">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -19,10 +20,6 @@ interface ServiceFiltersProps {
   onFilterChange: (filteredServices: Service[]) => void;
 }
 
-const CATEGORIES = ['All', ...new Set(MOCK_SERVICES.map((s) => s.category))];
-const MAX_PRICE = Math.max(...MOCK_SERVICES.map((s) => s.price), 500);
-
-import { MOCK_SERVICES } from '@/lib/mock-data';
 
 export default function ServiceFilters({
   services,
@@ -30,6 +27,10 @@ export default function ServiceFilters({
 }: ServiceFiltersProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [category, setCategory] = React.useState('All');
+  
+  const CATEGORIES = ['All', ...new Set(services.map((s) => s.category))];
+  const MAX_PRICE = services.length > 0 ? Math.max(...services.map((s) => s.price), 500) : 500;
+  
   const [priceRange, setPriceRange] = React.useState([MAX_PRICE]);
 
   const applyFilters = React.useCallback(() => {
@@ -53,8 +54,14 @@ export default function ServiceFilters({
   }, [services, searchTerm, category, priceRange, onFilterChange]);
 
   React.useEffect(() => {
+    // When services data changes, re-apply filters
     applyFilters();
-  }, [applyFilters]);
+  }, [services, applyFilters]);
+
+  React.useEffect(() => {
+    // When filter values change, apply filters
+    applyFilters();
+  }, [searchTerm, category, priceRange, applyFilters]);
   
   const resetFilters = () => {
     setSearchTerm('');

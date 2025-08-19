@@ -1,3 +1,4 @@
+
 export interface Review {
   id: string;
   author: string;
@@ -21,6 +22,7 @@ export interface Service {
   category: string;
   price: number;
   provider: string;
+  providerId: string;
   imageUrl: string;
   imageHint: string;
   reviews: Review[];
@@ -36,7 +38,7 @@ export type KycStatus = 'pending' | 'verified' | 'rejected' | 'not-started';
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  photoURL?: string;
+  name?: string | null;
+  photoURL?: string | null;
   kycStatus: KycStatus;
 }

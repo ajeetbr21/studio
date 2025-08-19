@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -19,7 +20,7 @@ interface ServiceFormProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   service: Service | null;
-  onSave: (service: Service) => void;
+  onSave: (service: Partial<Service>) => void;
 }
 
 export default function ServiceForm({
@@ -39,7 +40,6 @@ export default function ServiceForm({
         description: '',
         category: '',
         price: 0,
-        provider: 'My Company', // Mock provider name
         imageUrl: 'https://placehold.co/400x250.png',
         imageHint: 'service technology',
         reviews: [],
@@ -55,7 +55,7 @@ export default function ServiceForm({
   };
 
   const handleSubmit = () => {
-    onSave(formData as Service);
+    onSave(formData);
     setIsOpen(false);
   };
 
@@ -111,7 +111,7 @@ export default function ServiceForm({
             <Input
               id="price"
               type="number"
-              value={formData.price || 0}
+              value={formData.price || ''}
               onChange={handleChange}
               className="col-span-3"
             />

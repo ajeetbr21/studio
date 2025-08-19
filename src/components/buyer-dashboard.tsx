@@ -1,21 +1,40 @@
+
 "use client";
 
 import * as React from 'react';
 import ServiceCard from '@/components/service-card';
 import ServiceFilters from '@/components/service-filters';
-import { MOCK_SERVICES } from '@/lib/mock-data';
 import type { Service, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { Plus } from 'lucide-react';
+import { collection, onSnapshot, query, doc, updateDoc, arrayUnion, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from './ui/skeleton';
 
 export default function BuyerDashboard({ user }: { user: User | null }) {
-  const [filteredServices, setFilteredServices] =
-    React.useState<Service[]>(MOCK_SERVICES);
+  const [allServices, setAllServices] = React.useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = React.useState<Service[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
   const { toast } = useToast();
+  
+  React.useEffect(() => {
+    const q = query(collection(db, "services"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const servicesData: Service[] = [];
+      querySnapshot.forEach((doc) => {
+        servicesData.push({ id: doc.id, ...doc.data() } as Service);
+      });
+      setAllServices(servicesData);
+      setFilteredServices(servicesData);
+      setLoading(false);
+    });
 
-  const handleBookNow = (service: Service) => {
+    return () => unsubscribe();
+  }, []);
+
+  const handleBookNow = async (service: Service) => {
     if (!user) {
         toast({
             variant: 'destructive',
@@ -34,11 +53,63 @@ export default function BuyerDashboard({ user }: { user: User | null }) {
     }
 
     console.log('Booking service:', service.title);
-    toast({
-      title: 'Booking Confirmed!',
-      description: `You have successfully booked "${service.title}". Payment is now in escrow.`,
-    });
+    
+    try {
+        await addDoc(collection(db, "bookings"), {
+            serviceId: service.id,
+            serviceTitle: service.title,
+            providerId: service.providerId,
+            buyerId: user.id,
+            buyerName: user.name || user.email,
+            price: service.price,
+            status: 'requested',
+            paymentStatus: 'pending',
+            createdAt: serverTimestamp(),
+        });
+
+        toast({
+          title: 'Booking Requested!',
+          description: `Your request for "${service.title}" has been sent.`,
+        });
+
+    } catch(error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Booking Failed',
+            description: error.message,
+        });
+    }
+
   };
+
+  if (loading) {
+    return (
+       <div className="flex flex-col gap-6 relative">
+          <header>
+            <Skeleton className="h-10 w-1/4" />
+            <Skeleton className="h-4 w-1/2 mt-2" />
+          </header>
+          {/* Filter skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-card/50">
+             <Skeleton className="h-10 w-full" />
+             <Skeleton className="h-10 w-full" />
+             <Skeleton className="h-10 w-full" />
+             <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex flex-col space-y-3">
+                    <Skeleton className="h-[192px] w-full rounded-xl" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-[250px]" />
+                        <Skeleton className="h-4 w-[200px]" />
+                    </div>
+                </div>
+            ))}
+          </div>
+       </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 relative">
@@ -49,7 +120,7 @@ export default function BuyerDashboard({ user }: { user: User | null }) {
         </p>
       </header>
       <ServiceFilters
-        services={MOCK_SERVICES}
+        services={allServices}
         onFilterChange={setFilteredServices}
       />
       {filteredServices.length > 0 ? (

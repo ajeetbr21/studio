@@ -1,5 +1,7 @@
+
 import type { Service } from './types';
 
+// This data is now used for seeding/reference and is not actively fetched by components.
 export const MOCK_SERVICES: Service[] = [
   {
     id: 'service-1',
@@ -9,6 +11,7 @@ export const MOCK_SERVICES: Service[] = [
     category: 'Web Development',
     price: 2500,
     provider: 'Pixel Perfect Inc.',
+    providerId: 'provider-1',
     imageUrl: 'https://placehold.co/400x250.png',
     imageHint: 'web development code',
     reviews: [
@@ -28,6 +31,7 @@ export const MOCK_SERVICES: Service[] = [
     category: 'Design',
     price: 1200,
     provider: 'Creative Minds',
+    providerId: 'provider-2',
     imageUrl: 'https://placehold.co/400x250.png',
     imageHint: 'mobile app design',
     reviews: [
@@ -46,6 +50,7 @@ export const MOCK_SERVICES: Service[] = [
     category: 'Marketing',
     price: 800,
     provider: 'Growth Hackers',
+    providerId: 'provider-3',
     imageUrl: 'https://placehold.co/400x250.png',
     imageHint: 'marketing chart analytics',
     reviews: [
@@ -64,6 +69,7 @@ export const MOCK_SERVICES: Service[] = [
     category: 'Cloud Services',
     price: 3000,
     provider: 'InfraCloud Solutions',
+    providerId: 'provider-4',
     imageUrl: 'https://placehold.co/400x250.png',
     imageHint: 'cloud infrastructure server',
     reviews: [
